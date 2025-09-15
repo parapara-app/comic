@@ -4,7 +4,7 @@ mod handlers;
 mod models;
 
 use axum::{
-    routing::{delete, get, post, put},
+    routing::get,
     Router,
 };
 use tower_http::cors::{Any, CorsLayer};
@@ -47,10 +47,12 @@ async fn main() {
         // Health check
         .route("/health", get(health))
         // Test CRUD endpoints
-        .route("/api/tests", get(list_tests).post(create_test))
+        .route("/api/tests", axum::routing::get(list_tests).post(create_test))
         .route(
             "/api/tests/:id",
-            get(get_test).put(update_test).delete(delete_test),
+            axum::routing::get(get_test)
+                .put(update_test)
+                .delete(delete_test),
         )
         // Add database pool to state
         .with_state(pool)
