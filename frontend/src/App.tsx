@@ -1,7 +1,7 @@
-import Header from './components/Header'
-import Content from './components/Content'
-import Footer from './components/Footer'
-import BottomNavigation from './components/BottomNavigation'
+import Header from '@/components/organisms/Header'
+import Content from '@/components/organisms/Content'
+import Footer from '@/components/organisms/Footer'
+import BottomNavigation from '@/components/organisms/BottomNavigation'
 
 function App() {
   return (
