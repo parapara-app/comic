@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: node:24-alpine
+    working_dir: /app
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8080
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    networks:
+      - app-network
+
+  backend:
+    image: rust:1.89.0
+    working_dir: /app
+    volumes:
+      - ../backend:/app
+      - cargo-cache:/usr/local/cargo/registry
+      - cargo-git:/usr/local/cargo/git
+      - target-cache:/app/target
+    ports:
+      - "8080:8080"
+    environment:
+      - RUST_LOG=debug
+      - RUST_BACKTRACE=1
+    command: sh -c "cargo install cargo-watch && cargo watch -x run"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  cargo-cache:
+  cargo-git:
+  target-cache:
