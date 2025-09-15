@@ -26,9 +26,10 @@ services:
       - target-cache:/app/target
     ports:
       - "8080:8080"
-    environment:
-      - RUST_LOG=debug
-      - RUST_BACKTRACE=1
+    env_file:
+      - ../backend/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: sh -c "cargo install cargo-watch && cargo watch -x run"
     networks:
       - app-network
