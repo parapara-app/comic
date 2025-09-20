@@ -1,0 +1,82 @@
+services:
+  ssh-tunnel:
+    image: alpine:3.20
+    network_mode: host
+    env_file:
+      - .env.staging
+    volumes:
+      - ${BASTION_SSH_KEY_PATH}:/ssh/id_rsa:ro
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "${LOCAL_TUNNEL_PORT:-5433}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    command:
+      - sh
+      - -lc
+      - |
+        set -e
+        apk add --no-cache openssh-client netcat-openbsd
+        # Copy key to a writable path and fix permissions
+        cp /ssh/id_rsa /tmp/id_rsa
+        chmod 600 /tmp/id_rsa
+        # Start persistent local port-forward via bastion
+        exec ssh -NT \
+          -o ServerAliveInterval=30 \
+          -o ServerAliveCountMax=6 \
+          -o ExitOnForwardFailure=yes \
+          -o StrictHostKeyChecking=$${SSH_STRICT_HOST_KEY_CHECKING} \
+          -i /tmp/id_rsa \
+          -p $${BASTION_PORT:-22} \
+          -L 127.0.0.1:$${LOCAL_TUNNEL_PORT:-5433}:$${DB_TARGET_HOST}:$${DB_TARGET_PORT:-5432} \
+          $${BASTION_USER}@$${BASTION_HOST}
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.staging
+    image: comic-frontend:staging
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    env_file:
+      - .env.staging
+    networks:
+      - app-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.staging
+    image: comic-backend:staging
+    network_mode: host
+    env_file:
+      - .env.staging
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:${LOCAL_TUNNEL_PORT}/${POSTGRES_DATABASE}
+    depends_on:
+      ssh-tunnel:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  cargo-cache:
+  cargo-git:
+  target-cache:

@@ -31,6 +31,12 @@ Cargo.lock
 .env.test.local
 .env.production.local
 
+# Infrastructure environment files
+infra/.env.dev
+infra/.env.staging
+infra/.env.prod
+infra/.env
+
 # Logs
 logs/
 *.log
