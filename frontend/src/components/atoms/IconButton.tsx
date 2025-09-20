@@ -11,7 +11,7 @@ export default function IconButton({ onClick, children, className = "", ariaLabe
   return (
     <button
       onClick={onClick}
-      className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${className}`}
+      className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors ${className}`}
       aria-label={ariaLabel}
     >
       {children}
