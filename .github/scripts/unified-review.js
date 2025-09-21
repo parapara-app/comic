@@ -221,10 +221,11 @@ ${filesSummary}
       max_tokens: 2500,
     });
 
-    return completion.choices[0].message.content;
+    return { success: true, content: completion.choices[0].message.content };
   } catch (error) {
     console.error('Error analyzing with OpenAI:', error);
-    return null;
+    const errorMessage = error?.response?.data?.error?.message || error?.message || 'Unknown error';
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -261,7 +262,7 @@ async function main() {
     console.log('Sending single API request to OpenAI...');
 
     // Make single API call
-    const aiAnalysis = await analyzeWithOpenAI(filesData);
+    const aiResult = await analyzeWithOpenAI(filesData);
 
     // Generate report
     const report = [];
@@ -270,11 +271,17 @@ async function main() {
     report.push(`**분석된 파일:** ${files.length}개`);
     report.push(`**패턴 검출:** 보안(${totalPatterns.security}개), 성능(${totalPatterns.performance}개)`);
 
-    if (aiAnalysis) {
-      report.push(aiAnalysis);
+    if (aiResult && aiResult.success) {
+      report.push(aiResult.content);
     } else {
       report.push('### ⚠️ 리뷰 실패\n');
-      report.push('AI 분석을 완료할 수 없습니다. 로그를 확인해주세요.');
+      report.push('AI 분석을 완료할 수 없습니다.');
+      report.push(`\n**오류 내용:** ${aiResult?.error || 'Unknown error'}`);
+      report.push('\n**가능한 원인:**');
+      report.push('- OpenAI API 키가 올바르게 설정되지 않음');
+      report.push('- 모델 접근 권한 부족 (gpt-5-mini)');
+      report.push('- API 요청 한도 초과');
+      report.push('- 네트워크 연결 문제');
     }
 
     report.push('\n---');
