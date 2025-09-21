@@ -221,9 +221,18 @@ ${filesSummary}
       max_completion_tokens: 2500,
     });
 
-    return { success: true, content: completion.choices[0].message.content };
+    const content = completion.choices[0]?.message?.content;
+
+    if (!content || content.trim().length === 0) {
+      console.error('OpenAI returned empty content');
+      return { success: false, error: 'AI returned empty response' };
+    }
+
+    console.log(`OpenAI response received: ${content.length} characters`);
+    return { success: true, content };
   } catch (error) {
     console.error('Error analyzing with OpenAI:', error);
+    console.error('Full error object:', JSON.stringify(error?.response?.data || error, null, 2));
     const errorMessage = error?.response?.data?.error?.message || error?.message || 'Unknown error';
     return { success: false, error: errorMessage };
   }
@@ -260,6 +269,8 @@ async function main() {
 
     console.log(`Pattern detection: Security(${totalPatterns.security}), Performance(${totalPatterns.performance})`);
     console.log('Sending single API request to OpenAI...');
+    console.log(`Total files to analyze: ${filesData.length}`);
+    console.log(`Request payload size: ~${Math.round(JSON.stringify(filesData).length / 1024)}KB`);
 
     // Make single API call
     const aiResult = await analyzeWithOpenAI(filesData);
