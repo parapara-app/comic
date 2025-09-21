@@ -28,19 +28,29 @@ jobs:
           components: rustfmt, clippy
           override: true
 
-      # Setup sccache for faster compilation
+      # Try to setup sccache, but don't fail if it doesn't work
       - name: Setup sccache
+        id: sccache
         uses: mozilla-actions/sccache-action@v0.0.5
         with:
           version: "v0.8.2"
         continue-on-error: true
 
-      - name: Configure sccache
+      - name: Configure Rust compilation
         run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-          echo "ACTIONS_CACHE_URL=${{ env.ACTIONS_CACHE_URL || '' }}" >> $GITHUB_ENV
-          echo "ACTIONS_RUNTIME_TOKEN=${{ env.ACTIONS_RUNTIME_TOKEN || '' }}" >> $GITHUB_ENV
+          # Only use sccache if it was successfully installed
+          if command -v sccache &> /dev/null; then
+            # Test if sccache can start properly
+            if sccache --version &> /dev/null; then
+              echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+              echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+              echo "✅ Using sccache for compilation"
+            else
+              echo "⚠️ sccache installed but not working, using default compiler"
+            fi
+          else
+            echo "ℹ️ sccache not available, using default compiler"
+          fi
 
       - name: Cache cargo registry
         uses: actions/cache@v3
@@ -98,19 +108,29 @@ jobs:
           toolchain: ${{ env.RUST_VERSION }}
           override: true
 
-      # Setup sccache for faster compilation
+      # Try to setup sccache, but don't fail if it doesn't work
       - name: Setup sccache
+        id: sccache
         uses: mozilla-actions/sccache-action@v0.0.5
         with:
           version: "v0.8.2"
         continue-on-error: true
 
-      - name: Configure sccache
+      - name: Configure Rust compilation
         run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-          echo "ACTIONS_CACHE_URL=${{ env.ACTIONS_CACHE_URL || '' }}" >> $GITHUB_ENV
-          echo "ACTIONS_RUNTIME_TOKEN=${{ env.ACTIONS_RUNTIME_TOKEN || '' }}" >> $GITHUB_ENV
+          # Only use sccache if it was successfully installed
+          if command -v sccache &> /dev/null; then
+            # Test if sccache can start properly
+            if sccache --version &> /dev/null; then
+              echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+              echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+              echo "✅ Using sccache for compilation"
+            else
+              echo "⚠️ sccache installed but not working, using default compiler"
+            fi
+          else
+            echo "ℹ️ sccache not available, using default compiler"
+          fi
 
       - name: Cache dependencies
         uses: actions/cache@v3
@@ -172,19 +192,29 @@ jobs:
           toolchain: ${{ env.RUST_VERSION }}
           override: true
 
-      # Setup sccache for faster compilation
+      # Try to setup sccache, but don't fail if it doesn't work
       - name: Setup sccache
+        id: sccache
         uses: mozilla-actions/sccache-action@v0.0.5
         with:
           version: "v0.8.2"
         continue-on-error: true
 
-      - name: Configure sccache
+      - name: Configure Rust compilation
         run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-          echo "ACTIONS_CACHE_URL=${{ env.ACTIONS_CACHE_URL || '' }}" >> $GITHUB_ENV
-          echo "ACTIONS_RUNTIME_TOKEN=${{ env.ACTIONS_RUNTIME_TOKEN || '' }}" >> $GITHUB_ENV
+          # Only use sccache if it was successfully installed
+          if command -v sccache &> /dev/null; then
+            # Test if sccache can start properly
+            if sccache --version &> /dev/null; then
+              echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+              echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+              echo "✅ Using sccache for compilation"
+            else
+              echo "⚠️ sccache installed but not working, using default compiler"
+            fi
+          else
+            echo "ℹ️ sccache not available, using default compiler"
+          fi
 
       - name: Cache dependencies
         uses: actions/cache@v3
@@ -221,19 +251,29 @@ jobs:
           toolchain: ${{ env.RUST_VERSION }}
           override: true
 
-      # Setup sccache for faster compilation
+      # Try to setup sccache, but don't fail if it doesn't work
       - name: Setup sccache
+        id: sccache
         uses: mozilla-actions/sccache-action@v0.0.5
         with:
           version: "v0.8.2"
         continue-on-error: true
 
-      - name: Configure sccache
+      - name: Configure Rust compilation
         run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-          echo "ACTIONS_CACHE_URL=${{ env.ACTIONS_CACHE_URL || '' }}" >> $GITHUB_ENV
-          echo "ACTIONS_RUNTIME_TOKEN=${{ env.ACTIONS_RUNTIME_TOKEN || '' }}" >> $GITHUB_ENV
+          # Only use sccache if it was successfully installed
+          if command -v sccache &> /dev/null; then
+            # Test if sccache can start properly
+            if sccache --version &> /dev/null; then
+              echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+              echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+              echo "✅ Using sccache for compilation"
+            else
+              echo "⚠️ sccache installed but not working, using default compiler"
+            fi
+          else
+            echo "ℹ️ sccache not available, using default compiler"
+          fi
 
       - name: Run cargo audit
         working-directory: ./backend
