@@ -15,7 +15,7 @@ pub async fn list_tests(State(pool): State<PgPool>) -> Result<Json<Vec<Test>>, S
         SELECT id, title, content, created_at, updated_at
         FROM comic.test
         ORDER BY created_at DESC
-        "#
+        "#,
     )
     .fetch_all(&pool)
     .await
@@ -34,7 +34,7 @@ pub async fn get_test(
         SELECT id, title, content, created_at, updated_at
         FROM comic.test
         WHERE id = $1
-        "#
+        "#,
     )
     .bind(id)
     .fetch_one(&pool)
@@ -54,7 +54,7 @@ pub async fn create_test(
         INSERT INTO comic.test (title, content)
         VALUES ($1, $2)
         RETURNING id, title, content, created_at, updated_at
-        "#
+        "#,
     )
     .bind(&payload.title)
     .bind(&payload.content)
@@ -81,7 +81,7 @@ pub async fn update_test(
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
         RETURNING id, title, content, created_at, updated_at
-        "#
+        "#,
     )
     .bind(id)
     .bind(&payload.title)
@@ -102,7 +102,7 @@ pub async fn delete_test(
         r#"
         DELETE FROM comic.test
         WHERE id = $1
-        "#
+        "#,
     )
     .bind(id)
     .execute(&pool)
