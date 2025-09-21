@@ -3,6 +3,7 @@ name: OpenAI Code Review
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    branches: [develop]  # develop 브랜치로 가는 PR에서만 실행
     paths:
       - '**.ts'
       - '**.tsx'

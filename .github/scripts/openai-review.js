@@ -104,34 +104,34 @@ async function getChangedFiles() {
  * Create a prompt for OpenAI to review the code
  */
 function createReviewPrompt(fileInfo) {
-  return `You are an expert code reviewer. Please review the following code changes and provide constructive feedback.
+  return `당신은 전문 코드 리뷰어입니다. 다음 코드 변경사항을 검토하고 건설적인 피드백을 제공해주세요.
 
-File: ${fileInfo.filename}
-Language: ${fileInfo.language}
-Status: ${fileInfo.status}
-Changes: +${fileInfo.additions} -${fileInfo.deletions}
+파일: ${fileInfo.filename}
+언어: ${fileInfo.language}
+상태: ${fileInfo.status}
+변경사항: +${fileInfo.additions} -${fileInfo.deletions}
 
-Code Diff:
+코드 변경:
 \`\`\`diff
 ${fileInfo.patch}
 \`\`\`
 
-Please analyze the code for:
-1. **Code Quality**: Readability, maintainability, and adherence to best practices
-2. **Potential Bugs**: Logic errors, edge cases, or runtime issues
-3. **Security Issues**: Vulnerabilities, data exposure, or injection risks
-4. **Performance**: Inefficiencies or optimization opportunities
-5. **Testing**: Missing test coverage or testability concerns
-6. **Documentation**: Missing or unclear comments/documentation
+다음 항목들을 분석해주세요:
+1. **코드 품질**: 가독성, 유지보수성, 베스트 프랙티스 준수
+2. **잠재적 버그**: 논리 오류, 엣지 케이스, 런타임 이슈
+3. **보안 이슈**: 취약점, 데이터 노출, 인젝션 리스크
+4. **성능**: 비효율성 또는 최적화 기회
+5. **테스트**: 누락된 테스트 커버리지 또는 테스트 가능성 문제
+6. **문서화**: 누락되거나 불명확한 주석/문서
 
-Format your response as:
-- **Summary**: Brief overview of the changes
-- **Strengths**: What's done well
-- **Issues**: Problems that need fixing (if any)
-- **Suggestions**: Recommendations for improvement
-- **Risk Level**: Low/Medium/High
+다음 형식으로 응답해주세요:
+- **요약**: 변경사항의 간략한 개요
+- **장점**: 잘 작성된 부분
+- **문제점**: 수정이 필요한 문제 (있는 경우)
+- **제안사항**: 개선을 위한 권고사항
+- **위험 수준**: 낮음/중간/높음
 
-Be constructive and specific. Focus on important issues rather than style preferences.`;
+건설적이고 구체적으로 작성하세요. 스타일 선호보다는 중요한 이슈에 집중하세요.`;
 }
 
 /**
@@ -146,7 +146,7 @@ async function reviewFile(fileInfo) {
       messages: [
         {
           role: 'system',
-          content: 'You are a senior software engineer performing code review.',
+          content: '당신은 코드 리뷰를 수행하는 시니어 소프트웨어 엔지니어입니다. 한국어로 리뷰를 작성해주세요.',
         },
         {
           role: 'user',
@@ -183,21 +183,21 @@ async function reviewFile(fileInfo) {
 function createSummaryPrompt(reviews) {
   const reviewsText = reviews
     .filter(r => r.status === 'success')
-    .map(r => `File: ${r.filename}\n${r.review}`)
+    .map(r => `파일: ${r.filename}\n${r.review}`)
     .join('\n\n');
 
-  return `Based on the following individual file reviews, provide an overall summary of the pull request:
+  return `다음 개별 파일 리뷰를 바탕으로 Pull Request의 전체 요약을 제공해주세요:
 
 ${reviewsText}
 
-Please provide:
-1. **Overall Assessment**: General quality and readiness of the PR
-2. **Key Strengths**: Main positive aspects across all changes
-3. **Critical Issues**: Most important problems to address (if any)
-4. **Recommended Actions**: Prioritized list of what needs to be done
-5. **Approval Recommendation**: Ready to merge / Needs minor changes / Needs major changes
+다음 내용을 제공해주세요:
+1. **전체 평가**: PR의 전반적인 품질과 머지 준비 상태
+2. **주요 장점**: 모든 변경사항에서의 주요 긍정적 측면
+3. **중요 이슈**: 해결해야 할 가장 중요한 문제들 (있는 경우)
+4. **권장 조치사항**: 우선순위가 정해진 작업 목록
+5. **승인 권고사항**: 머지 가능 / 사소한 변경 필요 / 주요 변경 필요
 
-Keep the summary concise and actionable.`;
+간결하고 실행 가능하게 작성해주세요.`;
 }
 
 /**
@@ -212,7 +212,7 @@ async function generateSummary(reviews) {
       messages: [
         {
           role: 'system',
-          content: 'You are a senior software engineer summarizing code review findings.',
+          content: '당신은 코드 리뷰 결과를 요약하는 시니어 소프트웨어 엔지니어입니다. 한국어로 요약을 작성해주세요.',
         },
         {
           role: 'user',
@@ -253,26 +253,26 @@ function saveReviewResults(reviews, summary) {
   const content = [];
 
   // Write header
-  content.push(`## 🤖 AI Code Review\n`);
+  content.push(`## 🤖 AI 코드 리뷰\n`);
   content.push(`**Pull Request:** #${prNumber}`);
-  content.push(`**Files Reviewed:** ${reviews.length}`);
-  content.push(`**Model:** ${OPENAI_MODEL}\n`);
+  content.push(`**검토한 파일 수:** ${reviews.length}`);
+  content.push(`**모델:** ${OPENAI_MODEL}\n`);
 
   // Write overall summary
-  content.push(`## 📊 Overall Summary\n`);
+  content.push(`## 📊 전체 요약\n`);
   content.push(summary);
   content.push('\n');
 
   // Write individual file reviews
-  content.push(`## 📝 Detailed File Reviews\n`);
+  content.push(`## 📝 상세 파일 리뷰\n`);
   for (const review of reviews) {
     content.push(formatReviewComment(review));
   }
 
   // Write footer
   content.push('\n---');
-  content.push('*This review was generated automatically by OpenAI GPT-4. ');
-  content.push('Please consider it as suggestions and use your judgment when addressing the feedback.*');
+  content.push('*이 리뷰는 OpenAI GPT-4에 의해 자동으로 생성되었습니다. ');
+  content.push('피드백을 처리할 때는 제안사항으로 참고하시고 여러분의 판단을 우선해주세요.*');
 
   writeFileSync('review_results.md', content.join('\n'));
 }
@@ -303,7 +303,7 @@ async function postInlineComments(reviews) {
           owner,
           repo,
           pull_number: prNumber,
-          body: `🚨 **AI Review Alert**\n\nPotential issue detected. Please review the AI analysis for this file.`,
+          body: `🚨 **AI 리뷰 경고**\n\n잠재적 이슈가 감지되었습니다. 이 파일에 대한 AI 분석을 검토해주세요.`,
           commit_id: pr.head.sha,
           path: review.filename,
           line: 1, // In production, parse the actual line from the diff
