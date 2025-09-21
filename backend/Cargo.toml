@@ -19,3 +19,33 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
 cargo-watch = "8.5"
+
+# Compilation optimization profiles
+[profile.dev]
+opt-level = 0
+debug = 1
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = 'unwind'
+incremental = true
+codegen-units = 256
+rpath = false
+# Speed up compilation in dev mode
+split-debuginfo = "unpacked"
+
+[profile.dev.package."*"]
+opt-level = 2  # Optimize dependencies even in dev mode
+
+[profile.test]
+opt-level = 0
+debug = 2
+incremental = true
+
+[profile.release]
+opt-level = 3
+debug = false
+lto = "thin"
+codegen-units = 1
+panic = 'abort'
+strip = true
