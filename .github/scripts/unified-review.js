@@ -217,7 +217,6 @@ ${filesSummary}
           content: prompt,
         },
       ],
-      temperature: 1,  // gpt-5-mini only supports default temperature value
       max_completion_tokens: 2500,
     });
 
@@ -233,8 +232,18 @@ ${filesSummary}
   } catch (error) {
     console.error('Error analyzing with OpenAI:', error);
     console.error('Full error object:', JSON.stringify(error?.response?.data || error, null, 2));
-    const errorMessage = error?.response?.data?.error?.message || error?.message || 'Unknown error';
-    return { success: false, error: errorMessage };
+
+    // Extract detailed error information
+    let errorDetails = '';
+    if (error?.response?.data?.error) {
+      errorDetails = JSON.stringify(error.response.data.error, null, 2);
+    } else if (error?.message) {
+      errorDetails = error.message;
+    } else {
+      errorDetails = JSON.stringify(error, null, 2);
+    }
+
+    return { success: false, error: errorDetails };
   }
 }
 
@@ -287,12 +296,7 @@ async function main() {
     } else {
       report.push('### ⚠️ 리뷰 실패\n');
       report.push('AI 분석을 완료할 수 없습니다.');
-      report.push(`\n**오류 내용:** ${aiResult?.error || 'Unknown error'}`);
-      report.push('\n**가능한 원인:**');
-      report.push('- OpenAI API 키가 올바르게 설정되지 않음');
-      report.push('- 모델 접근 권한 부족 (gpt-5-mini)');
-      report.push('- API 요청 한도 초과');
-      report.push('- 네트워크 연결 문제');
+      report.push(`\n**오류:** ${aiResult?.error || 'Unknown error'}`);
     }
 
     report.push('\n---');
