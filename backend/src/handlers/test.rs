@@ -9,11 +9,8 @@ use uuid::Uuid;
 use crate::models::{CreateTestRequest, Test, UpdateTestRequest};
 
 // GET /api/tests
-pub async fn list_tests(
-    State(pool): State<PgPool>,
-) -> Result<Json<Vec<Test>>, StatusCode> {
-    let tests = sqlx::query_as!(
-        Test,
+pub async fn list_tests(State(pool): State<PgPool>) -> Result<Json<Vec<Test>>, StatusCode> {
+    let tests = sqlx::query_as::<_, Test>(
         r#"
         SELECT id, title, content, created_at, updated_at
         FROM comic.test
@@ -32,15 +29,14 @@ pub async fn get_test(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Test>, StatusCode> {
-    let test = sqlx::query_as!(
-        Test,
+    let test = sqlx::query_as::<_, Test>(
         r#"
         SELECT id, title, content, created_at, updated_at
         FROM comic.test
         WHERE id = $1
-        "#,
-        id
+        "#
     )
+    .bind(id)
     .fetch_one(&pool)
     .await
     .map_err(|_| StatusCode::NOT_FOUND)?;
@@ -53,16 +49,15 @@ pub async fn create_test(
     State(pool): State<PgPool>,
     Json(payload): Json<CreateTestRequest>,
 ) -> Result<(StatusCode, Json<Test>), StatusCode> {
-    let test = sqlx::query_as!(
-        Test,
+    let test = sqlx::query_as::<_, Test>(
         r#"
         INSERT INTO comic.test (title, content)
         VALUES ($1, $2)
         RETURNING id, title, content, created_at, updated_at
-        "#,
-        payload.title,
-        payload.content
+        "#
     )
+    .bind(&payload.title)
+    .bind(&payload.content)
     .fetch_one(&pool)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -77,8 +72,7 @@ pub async fn update_test(
     Json(payload): Json<UpdateTestRequest>,
 ) -> Result<Json<Test>, StatusCode> {
     // Update updated_at timestamp
-    let test = sqlx::query_as!(
-        Test,
+    let test = sqlx::query_as::<_, Test>(
         r#"
         UPDATE comic.test
         SET
@@ -87,11 +81,11 @@ pub async fn update_test(
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
         RETURNING id, title, content, created_at, updated_at
-        "#,
-        id,
-        payload.title,
-        payload.content
+        "#
     )
+    .bind(id)
+    .bind(&payload.title)
+    .bind(&payload.content)
     .fetch_one(&pool)
     .await
     .map_err(|_| StatusCode::NOT_FOUND)?;
@@ -104,13 +98,13 @@ pub async fn delete_test(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
-    let result = sqlx::query!(
+    let result = sqlx::query(
         r#"
         DELETE FROM comic.test
         WHERE id = $1
-        "#,
-        id
+        "#
     )
+    .bind(id)
     .execute(&pool)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;

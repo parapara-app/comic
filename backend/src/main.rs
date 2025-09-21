@@ -3,10 +3,7 @@ mod db;
 mod handlers;
 mod models;
 
-use axum::{
-    routing::get,
-    Router,
-};
+use axum::{Router, routing::get};
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -47,7 +44,10 @@ async fn main() {
         // Health check
         .route("/health", get(health))
         // Test CRUD endpoints
-        .route("/api/tests", axum::routing::get(list_tests).post(create_test))
+        .route(
+            "/api/tests",
+            axum::routing::get(list_tests).post(create_test),
+        )
         .route(
             "/api/tests/:id",
             axum::routing::get(get_test)
@@ -65,8 +65,16 @@ async fn main() {
         .expect("Failed to bind to address");
 
     tracing::info!("🚀 Server running on http://{}", addr);
-    tracing::info!("📍 Health check: http://{}:{}/health", config.server_host, config.server_port);
-    tracing::info!("📍 Test API: http://{}:{}/api/tests", config.server_host, config.server_port);
+    tracing::info!(
+        "📍 Health check: http://{}:{}/health",
+        config.server_host,
+        config.server_port
+    );
+    tracing::info!(
+        "📍 Test API: http://{}:{}/api/tests",
+        config.server_host,
+        config.server_port
+    );
 
     // Run server
     axum::serve(listener, app)
