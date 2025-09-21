@@ -28,6 +28,15 @@ jobs:
           components: rustfmt, clippy
           override: true
 
+      # Setup sccache for faster compilation
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.5
+
+      - name: Configure sccache
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
       - name: Cache cargo registry
         uses: actions/cache@v3
         with:
@@ -84,6 +93,15 @@ jobs:
           toolchain: ${{ env.RUST_VERSION }}
           override: true
 
+      # Setup sccache for faster compilation
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.5
+
+      - name: Configure sccache
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
@@ -101,12 +119,23 @@ jobs:
         run: |
           cargo test --verbose
 
+      # Cache cargo-tarpaulin binary
+      - name: Cache cargo-tarpaulin
+        uses: actions/cache@v3
+        id: tarpaulin-cache
+        with:
+          path: ~/.cargo/bin/cargo-tarpaulin
+          key: ${{ runner.os }}-cargo-tarpaulin-v0.32.8
+
+      - name: Install cargo-tarpaulin
+        if: steps.tarpaulin-cache.outputs.cache-hit != 'true'
+        run: cargo install cargo-tarpaulin --version 0.32.8
+
       - name: Generate test coverage
         working-directory: ./backend
         env:
           DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
         run: |
-          cargo install cargo-tarpaulin || true
           cargo tarpaulin --out Xml --output-dir coverage || true
         continue-on-error: true
 
@@ -132,6 +161,15 @@ jobs:
           profile: minimal
           toolchain: ${{ env.RUST_VERSION }}
           override: true
+
+      # Setup sccache for faster compilation
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.5
+
+      - name: Configure sccache
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Cache dependencies
         uses: actions/cache@v3
@@ -167,6 +205,15 @@ jobs:
           profile: minimal
           toolchain: ${{ env.RUST_VERSION }}
           override: true
+
+      # Setup sccache for faster compilation
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.5
+
+      - name: Configure sccache
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Run cargo audit
         working-directory: ./backend

@@ -218,7 +218,7 @@ ${filesSummary}
         },
       ],
       temperature: 0.2,
-      max_tokens: 2500,
+      max_completion_tokens: 2500,
     });
 
     return { success: true, content: completion.choices[0].message.content };
