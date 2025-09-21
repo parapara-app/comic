@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { HiMenu, HiSearch, HiSun, HiMoon } from 'react-icons/hi'
 import IconButton from '@/components/atoms/IconButton'
 import Sidebar from '@/components/organisms/Sidebar'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme } from '@/hooks/useTheme'
 
 interface HeaderProps {
   title?: string
