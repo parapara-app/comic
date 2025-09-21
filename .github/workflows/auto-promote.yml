@@ -1,0 +1,123 @@
+name: Auto Promote to Main
+
+on:
+  workflow_run:
+    workflows: ["Docker Build and Push"]
+    types: [completed]
+    branches: [develop]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  promote:
+    name: Promote develop to main
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch all branches
+        run: |
+          git fetch origin develop:develop
+          git fetch origin main:main
+
+      - name: Check for differences
+        id: check_diff
+        run: |
+          DIFF_COUNT=$(git rev-list --count main..develop)
+          echo "diff_count=$DIFF_COUNT" >> $GITHUB_OUTPUT
+
+          if [ "$DIFF_COUNT" -eq "0" ]; then
+            echo "No new commits to promote"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Found $DIFF_COUNT new commits to promote"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Merge develop to main
+        if: steps.check_diff.outputs.has_changes == 'true'
+        run: |
+          git checkout main
+          git merge develop --no-ff -m "🚀 Auto-promote from develop to main
+
+          Triggered by successful Docker build on develop branch.
+          Workflow: ${{ github.event.workflow_run.html_url }}"
+
+      - name: Push to main
+        if: steps.check_diff.outputs.has_changes == 'true'
+        run: |
+          git push origin main
+
+      - name: Create deployment summary
+        if: steps.check_diff.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: commits } = await github.rest.repos.compareCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: 'main',
+              head: 'develop'
+            });
+
+            let summary = '## 🚀 Auto-promotion successful!\n\n';
+            summary += `**Promoted ${commits.commits.length} commits from develop to main**\n\n`;
+            summary += '### Commits included:\n';
+
+            for (const commit of commits.commits.slice(0, 10)) {
+              summary += `- ${commit.commit.message.split('\n')[0]} (${commit.sha.substring(0, 7)})\n`;
+            }
+
+            if (commits.commits.length > 10) {
+              summary += `\n...and ${commits.commits.length - 10} more commits\n`;
+            }
+
+            // Post as workflow summary
+            await core.summary
+              .addHeading('Auto-promotion Results')
+              .addRaw(summary)
+              .write();
+
+      - name: Notify promotion status
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            Auto-promotion to main: ${{ job.status }}
+            Changes: ${{ steps.check_diff.outputs.has_changes }}
+            Diff count: ${{ steps.check_diff.outputs.diff_count }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        continue-on-error: true
+
+  # 실패시 알림
+  notify-failure:
+    name: Notify promotion failure
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+
+    steps:
+      - name: Notify Docker build failure
+        uses: 8398a7/action-slack@v3
+        with:
+          status: 'warning'
+          text: |
+            ⚠️ Docker build failed on develop branch
+            Auto-promotion to main was skipped
+            Check the failed workflow: ${{ github.event.workflow_run.html_url }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        continue-on-error: true

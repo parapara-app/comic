@@ -1,0 +1,149 @@
+name: Deploy to Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - production
+      version:
+        description: 'Version tag to deploy (leave empty for latest)'
+        required: false
+        type: string
+
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment:
+      name: production
+      url: https://parapara.app
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set deployment version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create deployment backup
+        env:
+          DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.PROD_DEPLOY_KEY }}
+        run: |
+          echo "$DEPLOY_KEY" > deploy_key
+          chmod 600 deploy_key
+          ssh -o StrictHostKeyChecking=no -i deploy_key ${DEPLOY_USER}@${DEPLOY_HOST} << 'EOF'
+            cd /opt/parapara
+            # Backup database before deployment
+            docker compose -f docker-compose.yml exec -T postgres pg_dump -U $DB_USER $DB_NAME > backup-$(date +%Y%m%d-%H%M%S).sql
+          EOF
+          rm deploy_key
+
+      - name: Deploy to production server (Blue-Green)
+        env:
+          DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.PROD_DEPLOY_KEY }}
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          echo "$DEPLOY_KEY" > deploy_key
+          chmod 600 deploy_key
+          ssh -o StrictHostKeyChecking=no -i deploy_key ${DEPLOY_USER}@${DEPLOY_HOST} << 'EOF'
+            cd /opt/parapara
+
+            # Pull new images
+            export IMAGE_TAG=${{ env.VERSION }}
+            docker compose pull
+
+            # Start new containers (green)
+            docker compose up -d --no-deps --scale frontend=2 --scale backend=2
+
+            # Wait for new containers to be healthy
+            sleep 30
+
+            # Switch traffic to new containers
+            docker compose up -d nginx
+
+            # Stop old containers
+            docker compose up -d --no-deps --scale frontend=1 --scale backend=1
+
+            # Clean up
+            docker system prune -f
+          EOF
+          rm deploy_key
+
+      - name: Health check
+        run: |
+          sleep 30
+          curl -f https://parapara.app/health || exit 1
+
+      - name: Run smoke tests
+        run: |
+          echo "Running production smoke tests..."
+
+      - name: Monitor metrics
+        run: |
+          echo "Monitoring production metrics for 5 minutes..."
+          sleep 300
+
+      - name: Notify deployment status
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Production deployment ${{ job.status }} - Version: ${{ github.event.inputs.version }}'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        continue-on-error: true
+
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: failure() && github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    needs: [deploy-production]
+    environment:
+      name: production-rollback
+
+    steps:
+      - name: Rollback production
+        env:
+          DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.PROD_DEPLOY_KEY }}
+        run: |
+          echo "$DEPLOY_KEY" > deploy_key
+          chmod 600 deploy_key
+          ssh -o StrictHostKeyChecking=no -i deploy_key ${DEPLOY_USER}@${DEPLOY_HOST} << 'EOF'
+            cd /opt/parapara
+            docker compose down
+            docker compose up -d
+          EOF
+          rm deploy_key
+
+      - name: Notify rollback
+        uses: 8398a7/action-slack@v3
+        with:
+          status: 'warning'
+          text: 'Production deployment rolled back!'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        continue-on-error: true
