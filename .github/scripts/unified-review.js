@@ -217,7 +217,7 @@ ${filesSummary}
           content: prompt,
         },
       ],
-      temperature: 0.2,
+      temperature: 1,  // gpt-5-mini only supports default temperature value
       max_completion_tokens: 2500,
     });
 

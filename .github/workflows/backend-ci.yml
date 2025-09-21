@@ -31,11 +31,16 @@ jobs:
       # Setup sccache for faster compilation
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.5
+        with:
+          version: "v0.8.2"
+        continue-on-error: true
 
       - name: Configure sccache
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          echo "ACTIONS_CACHE_URL=${{ env.ACTIONS_CACHE_URL || '' }}" >> $GITHUB_ENV
+          echo "ACTIONS_RUNTIME_TOKEN=${{ env.ACTIONS_RUNTIME_TOKEN || '' }}" >> $GITHUB_ENV
 
       - name: Cache cargo registry
         uses: actions/cache@v3
@@ -96,11 +101,16 @@ jobs:
       # Setup sccache for faster compilation
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.5
+        with:
+          version: "v0.8.2"
+        continue-on-error: true
 
       - name: Configure sccache
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          echo "ACTIONS_CACHE_URL=${{ env.ACTIONS_CACHE_URL || '' }}" >> $GITHUB_ENV
+          echo "ACTIONS_RUNTIME_TOKEN=${{ env.ACTIONS_RUNTIME_TOKEN || '' }}" >> $GITHUB_ENV
 
       - name: Cache dependencies
         uses: actions/cache@v3
@@ -165,11 +175,16 @@ jobs:
       # Setup sccache for faster compilation
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.5
+        with:
+          version: "v0.8.2"
+        continue-on-error: true
 
       - name: Configure sccache
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          echo "ACTIONS_CACHE_URL=${{ env.ACTIONS_CACHE_URL || '' }}" >> $GITHUB_ENV
+          echo "ACTIONS_RUNTIME_TOKEN=${{ env.ACTIONS_RUNTIME_TOKEN || '' }}" >> $GITHUB_ENV
 
       - name: Cache dependencies
         uses: actions/cache@v3
@@ -209,11 +224,16 @@ jobs:
       # Setup sccache for faster compilation
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.5
+        with:
+          version: "v0.8.2"
+        continue-on-error: true
 
       - name: Configure sccache
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          echo "ACTIONS_CACHE_URL=${{ env.ACTIONS_CACHE_URL || '' }}" >> $GITHUB_ENV
+          echo "ACTIONS_RUNTIME_TOKEN=${{ env.ACTIONS_RUNTIME_TOKEN || '' }}" >> $GITHUB_ENV
 
       - name: Run cargo audit
         working-directory: ./backend
